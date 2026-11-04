@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ghar ka Kirana – Order List</title>
+<style>
+:root{--bg:#f7f5ee;--surf:#fff;--ink:#1f2a1f;--mute:#6b756b;--line:#e2e0d4;--acc:#2f6b3a;--accink:#fff;--soft:#e6f0e4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a14;--surf:#1d261d;--ink:#e9efe6;--mute:#9aa89a;--line:#2f3b2f;--acc:#6fbf7c;--accink:#0f1a10;--soft:#24342a}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 "Segoe UI",Roboto,system-ui,sans-serif;padding-bottom:90px}
+header{padding:16px 16px 8px}
+h1{font:700 22px/1.2 Georgia,"Times New Roman",serif;margin:0}
+.sub{color:var(--mute);font-size:13px;margin-top:2px}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 16px;z-index:5}
+input[type=search]{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surf);color:var(--ink);font-size:16px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--surf);color:var(--ink);padding:7px 13px;border-radius:20px;font-size:14px}
+.tabs button.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+main{padding:4px 16px;max-width:720px;margin:auto}
+.item{display:flex;align-items:center;gap:10px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.item.in{border-color:var(--acc);background:var(--soft)}
+.info{flex:1;min-width:0}
+.nm{font-weight:600;font-size:15px}
+.pr{color:var(--mute);font-size:13px}
+.ctl{display:flex;align-items:center;gap:6px}
+.ctl button{width:34px;height:34px;border-radius:50%;border:1px solid var(--acc);background:var(--surf);color:var(--acc);font-size:20px;line-height:1}
+.ctl .add{width:auto;padding:0 16px;border-radius:18px;background:var(--acc);color:var(--accink);font-size:14px;font-weight:600}
+.ctl input{width:58px;text-align:center;padding:6px 2px;border:1px solid var(--line);border-radius:8px;background:var(--surf);color:var(--ink);font-size:15px}
+.u{font-size:12px;color:var(--mute)}
+.cartbar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--acc);color:var(--accink);display:flex;justify-content:space-between;align-items:center;z-index:9;border:0;width:100%;font-size:16px;font-weight:600}
+dialog{width:min(560px,94vw);max-height:88vh;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.tot{font-weight:700;font-size:18px;padding-top:10px}
+.act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act button{flex:1;min-width:120px;padding:11px;border-radius:10px;border:1px solid var(--acc);background:var(--surf);color:var(--acc);font-size:15px;font-weight:600}
+.act .p{background:var(--acc);color:var(--accink)}
+.act .d{border-color:#b3412f;color:#b3412f}
+.bill{width:100%;border-collapse:collapse;font-size:14px;background:var(--surf);border:1px solid var(--line)}
+.bill th,.bill td{padding:8px;border-bottom:1px dashed var(--line);text-align:right}
+.bill th:first-child,.bill td:first-child{text-align:left}
+.bill thead th{border-bottom:2px solid var(--line)}
+.bill tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.note{color:var(--mute);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+<h1>Ghar ka Kirana</h1>
+<div class="sub">Prices from bill 144111001-000557 · 04/11/2026</div>
+</header>
+<div class="bar">
+<input type="search" id="q" placeholder="Search item">
+<div class="tabs" id="tabs"></div>
+</div>
+<main id="list"></main>
+<button class="cartbar" id="cb"><span id="cc">0 items</span><span id="ct">View order · ₹0</span></button>
+
+<dialog id="dlg">
+<h2 style="margin:0 0 8px;font:700 19px Georgia,serif">Your order</h2>
+<div id="sum"></div>
+<div class="act">
+<button class="p" id="wa">Send on WhatsApp</button>
+<button id="cp">Copy list</button>
+<button id="rl">Load last order</button>
+<button class="d" id="cl">Clear</button>
+<button id="cx">Close</button>
+</div>
+<div class="note">Prices are MRP-inclusive store rates from your bill and may change. Loose items are per kg.</div>
+</dialog>
+
+<script>
+// [name, price, unit, category, gst%]
+const P=[
+["Kabuli Chana (SL)",107,"kg","Pulses & Rice",0],["Dal Chana",99,"kg","Pulses & Rice",0],["Chana",104,"kg","Pulses & Rice",0],
+["Moong Dal",113,"kg","Pulses & Rice",0],["Moong Dal (C)",114,"kg","Pulses & Rice",0],["Rajma (P)",167,"kg","Pulses & Rice",0],
+["Udad Black",130.5,"kg","Pulses & Rice",0],["Masoor (W)",87,"kg","Pulses & Rice",0],["Toor Dal (Plnt)",146,"kg","Pulses & Rice",0],
+["Mix Dal",116,"kg","Pulses & Rice",0],["Rice (LG)",55,"kg","Pulses & Rice",0],["Kani Steam Basmati Rice",41.5,"kg","Pulses & Rice",0],
+["Rava",46.5,"kg","Flour & Staples",0],["Maida",47,"kg","Flour & Staples",0],["Besan",98,"kg","Flour & Staples",0],["Poha (JD)",64.5,"kg","Flour & Staples",0],
+["Puro Healthy Salt 1kg",79,"pc","Flour & Staples",0],["Black Salt 200g",25,"pc","Flour & Staples",0],
+["Sugar",61,"kg","Flour & Staples",5],["Pasta",65.5,"kg","Flour & Staples",5],["Svasthi Bhog Rice 5kg",299,"pc","Pulses & Rice",5],
+["Shyam Black Pepper 100g",119,"pc","Spices",5],["Laung (Lawang) 50g",93.5,"pc","Spices",5],["Jeera",322.5,"kg","Spices",5],
+["Shyam Big Fennel 100g",49,"pc","Spices",5],["Haldi Powder (DK) 100g",31,"pc","Spices",5],["Shyam Kitchen King 100g",49,"pc","Spices",5],
+["Ajwain 100g",38.5,"pc","Spices",5],["Kasoori Methi 100g",67.5,"pc","Spices",5],["Rai Small 200g",34.5,"pc","Spices",5],
+["Shyam Premium 50g",75,"pc","Spices",5],["DK Oregano Seasoning 50g",36,"pc","Spices",5],
+["Dhara Lite Soy Oil 750g",158,"pc","Oil & Packaged",5],["Parachute Coconut Oil 100ml",63,"pc","Oil & Packaged",5],
+["Premia Gold Mustard Oil 800g",155,"pc","Oil & Packaged",5],["Homechef Roast 850g",72,"pc","Oil & Packaged",5],
+["Kellogg's Chocos 375g",175,"pc","Oil & Packaged",5],["Parle-G Original 80g",9.4,"pc","Oil & Packaged",5],["Bru Instant Coffee 50g",99,"pc","Oil & Packaged",5],
+["H&S Anti Dandruff 170ml",193,"pc","Personal & Home",5],["Indulekha Bringha 340ml",300,"pc","Personal & Home",5],
+["Bajaj Almond 185ml",173,"pc","Personal & Home",5],["Surf Excel Easy 1kg",133,"pc","Personal & Home",18]
+];
+const cats=["All","In order","Bill",...new Set(P.map(p=>p[3]))];
+// bill [qty, Value] per product, as printed on the bill
+const B={"Kabuli Chana (SL)":[1.472,157.5],"Dal Chana":[1.128,111.67],"Chana":[1.12,116.48],"Moong Dal":[1.37,154.81],"Moong Dal (C)":[1.026,116.96],"Rajma (P)":[1.696,283.23],"Udad Black":[1.11,144.86],"Masoor (W)":[0.962,83.69],"Toor Dal (Plnt)":[1.092,159.43],"Mix Dal":[0.84,97.44],"Rice (LG)":[1.47,80.85],"Kani Steam Basmati Rice (1)":[1.796,74.53],"Kani Steam Basmati Rice (2)":[2.772,115.04],"Rava":[1.184,55.06],"Maida":[0.986,46.34],"Besan":[1.614,158.17],"Poha (JD)":[0.634,40.89],"Puro Healthy Salt 1kg":[1,79],"Black Salt 200g":[1,25],"Sugar":[1.298,79.18],"Pasta":[1.016,66.55],"Svasthi Bhog Rice 5kg":[1,299],"Shyam Black Pepper 100g":[1,119],"Laung (Lawang) 50g":[1,93.5],"Jeera":[0.236,76.11],"Shyam Big Fennel 100g":[2,98],"Haldi Powder (DK) 100g":[1,31],"Shyam Kitchen King 100g":[2,98],"Ajwain 100g":[1,38.5],"Kasoori Methi 100g":[1,67.5],"Rai Small 200g":[1,34.5],"Shyam Premium 50g":[2,150],"DK Oregano Seasoning 50g":[1,36],"Dhara Lite Soy Oil 750g":[1,158],"Parachute Coconut Oil 100ml":[2,126],"Premia Gold Mustard Oil 800g":[1,155],"Homechef Roast 850g":[1,72],"Kellogg's Chocos 375g":[1,175],"Parle-G Original 80g":[8,75.2],"Bru Instant Coffee 50g":[1,99],"H&S Anti Dandruff 170ml":[1,193],"Indulekha Bringha 340ml":[1,300],"Bajaj Almond 185ml":[1,173],"Surf Excel Easy 1kg":[1,133]};
+const val=(i,q)=>Math.round(q*P[i][1]*100)/100;
+let cart={},cat="All",kw="";
+const $=id=>document.getElementById(id);
+const inr=n=>"₹"+n.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function save(){try{localStorage.setItem("kirana-cart",JSON.stringify(cart))}catch(e){}}
+function load(k){try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){return{}}}
+cart=load("kirana-cart");
+const step=i=>P[i][2]=="kg"?0.25:1;
+function setQ(i,v){v=Math.max(0,Math.round(v*1000)/1000);if(v>0)cart[i]=v;else delete cart[i];save();render()}
+function tabs(){$("tabs").innerHTML=cats.map(c=>`<button class="${c==cat?"on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}
+function render(){
+ tabs();
+ const rows=P.map((p,i)=>i).filter(i=>{const p=P[i];
+  if(cat=="In order"&&!cart[i])return false;
+  if(cat!="All"&&cat!="In order"&&p[3]!=cat)return false;
+  return p[0].toLowerCase().includes(kw)});
+ $("list").innerHTML=rows.length?rows.map(i=>{const p=P[i],q=cart[i];
+  const c=q?`<button data-m="${i}" aria-label="less">−</button><input type="number" inputmode="decimal" step="${step(i)}" min="0" value="${q}" data-i="${i}"><span class="u">${p[2]}</span><button data-a="${i}" aria-label="more">+</button>`
+   :`<button class="add" data-a="${i}">Add</button>`;
+  return `<div class="item ${q?"in":""}"><div class="info"><div class="nm">${esc(p[0])}</div><div class="pr"><b style="color:var(--ink)">${inr(p[1])}</b> / ${p[2]=="kg"?"1 kg":"pack"}${q?" · Total "+inr(val(i,q)):""}</div></div><div class="ctl">${c}</div></div>`}).join("")
+  :`<p class="sub" style="padding:20px 0">Nothing here. Try another category or search.</p>`;
+ if(cat=="Bill")$("list").innerHTML=billHtml();
+ const ks=Object.keys(cart),t=ks.reduce((s,i)=>s+val(i,cart[i]),0);
+ $("cc").textContent=ks.length+" item"+(ks.length==1?"":"s");
+ $("ct").textContent="View order · "+inr(t);
+}
+function billHtml(){
+ const ks=Object.keys(cart);if(!ks.length)return '<p class="sub" style="padding:20px 0">No items yet. Add items to see the bill with rate and value.</p>';
+ let t=0,q=0;
+ const r=ks.map(i=>{const p=P[i],v=val(i,cart[i]);t+=v;q+=cart[i];return `<tr><td>${esc(p[0])}</td><td>${cart[i]}${p[2]=="kg"?" kg":""}</td><td>${p[1].toFixed(2)}</td><td>${v.toFixed(2)}</td></tr>`}).join("");
+ return `<div style="overflow-x:auto"><table class="bill"><thead><tr><th>Particulars</th><th>Qty</th><th>Rate</th><th>Value</th></tr></thead><tbody>${r}</tbody><tfoot><tr><td>Items: ${ks.length}</td><td>${Math.round(q*1000)/1000}</td><td></td><td>${t.toFixed(2)}</td></tr></tfoot></table></div>`;
+}
+function summary(){
+ const ks=Object.keys(cart);let t=0,g=0;
+ const h=ks.map(i=>{const p=P[i],v=val(i,cart[i]);t+=v;g+=v-v/(1+p[4]/100);
+  return `<div class="row"><span>${esc(p[0])} × ${cart[i]}${p[2]=="kg"?" kg":""}</span><span>${inr(v)}</span></div>`}).join("");
+ $("sum").innerHTML=(h||'<p class="sub">Your order is empty.</p>')+`<div class="row"><span>GST included</span><span>${inr(g)}</span></div><div class="row tot"><span>Total</span><span>${inr(t)}</span></div>`;
+ return t;
+}
+function text(){
+ let t=0;const l=Object.keys(cart).map((i,n)=>{const p=P[i],v=val(i,cart[i]);t+=v;return `${n+1}. ${p[0]} - ${cart[i]}${p[2]=="kg"?" kg":" pc"} = ${inr(v)}`});
+ return "Grocery order\n"+l.join("\n")+"\nTotal: "+inr(t);
+}
+$("tabs").onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;render()}};
+$("q").oninput=e=>{kw=e.target.value.trim().toLowerCase();render()};
+$("list").onclick=e=>{const a=e.target.dataset.a,m=e.target.dataset.m;
+ if(a!==undefined)setQ(+a,cart[a]?cart[a]+step(+a):1);
+ if(m!==undefined)setQ(+m,cart[m]-step(+m))};
+$("list").onchange=e=>{if(e.target.dataset.i!==undefined)setQ(+e.target.dataset.i,parseFloat(e.target.value)||0)};
+$("cb").onclick=()=>{try{localStorage.setItem("kirana-last",JSON.stringify(cart))}catch(e){}summary();$("dlg").showModal()};
+$("cx").onclick=()=>$("dlg").close();
+$("cl").onclick=()=>{cart={};save();render();summary()};
+$("rl").onclick=()=>{const l=load("kirana-last");if(Object.keys(l).length){cart=l;save();render();summary()}};
+$("cp").onclick=async()=>{try{await navigator.clipboard.writeText(text());$("cp").textContent="Copied"}catch(e){$("cp").textContent="Copy failed"}};
+$("wa").onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent(text()),"_blank");
+render();
+</script>
+</body>
+</html>
